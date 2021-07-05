@@ -1,0 +1,134 @@
+import numpy as np  #导入矩阵操作函数库
+import cv2
+import os
+from xlrd import open_workbook
+
+from time import time
+from sklearn import metrics
+from sklearn.decomposition import PCA
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+
+import warnings
+
+warnings.filterwarnings('ignore')
+
+
+
+
+#忽略一些版本不兼容等警告
+warnings.filterwarnings("ignore")
+
+sign=0
+y = []
+x = []
+
+is_color = 1   #是否输入彩色图，为0则为灰度图
+acc_res = []
+# recall_res=[]
+# hunxiao_res=[]
+
+# #############################################################################
+# 读取数据集
+
+with open('messidor_features.artff.txt', 'r') as f:
+    lines = f.readlines()[25:]
+    for line in lines:
+        l = [float(i) for i in line.split(',')]
+        x.append(l[:-1])
+        y.append(l[-1])
+
+
+x = np.array(x)
+y = np.array(y)
+n_classes = 2
+n_samples = x.shape[0]
+n_features = x.shape[1]
+
+print("Total dataset size:")
+print("n_samples: %d" % n_samples)
+print("n_features: %d" % n_features)
+print("n_classes: %d" % n_classes)
+
+
+# #############################################################################
+# 数据集划分
+# 交叉验证
+
+
+from sklearn.model_selection import KFold
+kf = KFold(n_splits=10,shuffle=True)
+i=0
+for i, (train_index, test_index) in enumerate(kf.split(x)):
+    print('train_index{}'.format(i))
+    X_train, y_train = x[train_index], y[train_index]
+    X_test, y_test = x[test_index], y[test_index]
+    print("训练样本上采样...")
+
+    X_train_pca = X_train.tolist()
+    X_test_pca = X_test.tolist()
+
+    x_train = ''
+    x_test = ''
+    for i in range(len(X_train_pca)):
+        for num in X_train_pca[i]:
+            x_train += str(num)
+            # x_train += ' '
+        x_train += ''
+        X_train_pca[i] = x_train
+        x_train = ''
+    for i in range(len(X_test_pca)):
+        for num in X_test_pca[i]:
+            x_train += str(num)
+            # x_train += ' '
+        x_train += ''
+        X_test_pca[i] = x_train
+        x_train = ''
+
+    tf = TfidfVectorizer()
+    X_train_tf = tf.fit_transform(X_train_pca)
+    X_test_tf = tf.transform(X_test_pca)
+
+    # print(tf.get_feature_names())
+    #
+    # print(X_train_tf.shape)
+    X_train_tf.toarray()
+    X_test_tf.toarray()
+
+    # train
+    # clf = GaussianNB(var_smoothing=1e-8)
+    clf = MultinomialNB(alpha=1.0)
+    clf.fit(X_train_tf, y_train)
+
+    # evaluate y_test == y_pred rate
+    y_pred = clf.predict(X_test_tf)
+    y_pred_2 = clf.predict(X_train_tf)
+    acc = np.sum(y_test == y_pred) / X_test_tf.shape[0]
+    acc2 = np.sum(y_train == y_pred_2) / X_train_tf.shape[0]
+    print('test acc: %.3f' % acc)
+    print('train acc: %.3f' % acc2)
+    acc_res.append(acc)
+
+    print(clf.score(X_test_tf, y_test))  # 预测准确率
+    print(metrics.classification_report(y_test, y_pred))  # 包含准确率，召回率等信息表
+    print(metrics.confusion_matrix(y_test, y_pred))  # 混淆矩阵
+print(sum(acc_res) / len(acc_res))
+
+
+
+
+
+
+
+
+# # #精确度：precision，正确预测为正的，占全部预测为正的比例，TP / (TP+FP)
+# # 召回率：recall，正确预测为正的，占全部实际为正的比例，TP / (TP+FN)
+# # F1-score：精确率和召回率的调和平均数，2 * precision*recall / (precision+recall)
+#
+
+
+
+
+
+
+
