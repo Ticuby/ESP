@@ -1,4 +1,4 @@
-# ESP
+# ESP ＆ PR
 ## Algorithm1_KNN
 After placing the Messidor dataset in the `images` folder, run `knn-pupil_recognition.py` to perform image classification. If you want to categorize `messidor_features` directly into two categories, run `knn-视网膜特征分类.py`
 
